@@ -304,25 +304,34 @@
         radial-gradient(60% 45% at 50% 48%, rgba(255,70,80,.45), rgba(255,70,80,0) 70%),
         radial-gradient(70% 55% at 85% 92%, rgba(110,0,18,.65), rgba(110,0,18,0) 70%),
         linear-gradient(160deg, #ff2b3e 0%, #e8112b 42%, #b00a1e 100%);
-      overflow: hidden;
-      opacity: 1;
-      will-change: opacity, transform;
+      transform: translate3d(0,0,0);
+      will-change: transform;
       cursor: pointer;
     }
-    .intro-screen::before {
+    .intro-glass { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .intro-glass::before {
       content: ""; position: absolute; inset: -20%;
       background:
         linear-gradient(115deg, rgba(255,255,255,0) 32%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 56%),
         linear-gradient(115deg, rgba(255,255,255,0) 58%, rgba(255,255,255,.08) 64%, rgba(255,255,255,0) 70%);
-      pointer-events: none;
     }
-    .intro-screen::after {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
+    .intro-glass::after {
+      content: ""; position: absolute; inset: 0;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 120px rgba(90,0,12,.45);
     }
+    /* bright lip + soft shadow along the bottom edge of the shutter */
+    .intro-screen::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+      background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0));
+    }
+    .intro-screen::after {
+      content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 80px;
+      background: linear-gradient(180deg, rgba(60,0,8,.55), rgba(60,0,8,0));
+      pointer-events: none;
+    }
     .intro-screen.out {
-      opacity: 0; transform: scale(1.04); visibility: hidden;
-      transition: opacity .6s var(--ease), transform .6s var(--ease), visibility 0s linear .6s;
+      transform: translate3d(0,-110%,0);
+      transition: transform .85s var(--curtain);
     }
     .intro-stack {
       --mark: 150px; --word: 290px;
@@ -449,6 +458,7 @@
 <body>
   <!-- OPENING SCREEN (once per visit) -->
   <div class="intro-screen" id="intro" aria-hidden="true" style="display:none">
+    <div class="intro-glass"></div>
     <div class="intro-stack">
       <div class="intro-mark">
         <img src="assets/saburi-mark-white.webp" alt="" width="560" height="553">
@@ -495,7 +505,7 @@
         introDone = true;
         intro.classList.add('out');               // fades away...
         window.__startHome();                     // ...while the home screen builds in underneath
-        setTimeout(function () { intro.remove(); }, 700);
+        setTimeout(function () { intro.remove(); }, 950);
       }
       // play only when both logos are ready, so they appear together in one smooth move
       var imgs = [].slice.call(intro.querySelectorAll('img'));
