@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Saburi Resource Hub</title>
+  <meta name="theme-color" content="#a3161a">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; }
+    iframe { border: 0; width: 100%; height: 100%; display: block; }
+    #help {
+      display: none; position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 12px; background: #a3161a; color: #fff;
+      font: 14px/1.4 sans-serif; text-align: center;
+    }
+    #help a { color: #ffd6d6; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <!-- PASTE YOUR APPS SCRIPT /exec LINK BELOW -->
+  <iframe id="app"
+    src="https://script.google.com/macros/s/AKfycbzCp3U0bTIoWtPwdfob7Sqc6UEQzw6_e2eVFdp47QcPePKz3wErVz1K8kDs1J433T5r/exec"
+    allow="camera; microphone; geolocation; clipboard-write"></iframe>
+
+  <div id="help">
+    Page not loading?
+    <a id="direct" href="#" target="_blank">Open in Chrome</a>
+  </div>
+
+  <script>
+    const frame = document.getElementById('app');
+    document.getElementById('direct').href = frame.src;
+
+    // If the app does not load in 8 seconds, show the help bar
+    let loaded = false;
+    frame.addEventListener('load', () => { loaded = true; });
+    setTimeout(() => { if (!loaded) document.getElementById('help').style.display = 'block'; }, 8000);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
