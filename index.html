@@ -4,13 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Saburi Ply</title>
+  <meta name="description" content="Saburi Ply: Resource Hub and DSR Form for the Saburi sales team.">
+  <meta name="robots" content="noindex, nofollow">
   <meta name="application-name" content="Saburi Ply">
   <meta name="apple-mobile-web-app-title" content="Saburi Ply">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <!-- top bar follows the phone's light / dark mode -->
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d0f15">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
@@ -23,26 +27,32 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="image" href="assets/saburi-mark-white.webp">
   <link rel="preload" as="image" href="assets/saburi-wordmark-white.webp">
+  <link rel="preload" as="image" href="assets/saburi-mark-shadow.webp">
+  <link rel="preload" as="image" href="assets/saburi-wordmark-shadow.webp">
   <link rel="preload" as="image" href="assets/saburi-logo-white.webp">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <noscript><style>.a { opacity: 1 !important; } .intro-screen { display: none !important; }</style></noscript>
 
   <style>
     /* =====================================================================
        SMOOTHNESS RULE (90 / 120 / 144 / 165 Hz):
        everything that moves animates ONLY transform or opacity.
-       Those run on the phone's graphics chip at the screen's full refresh rate.
-       No blur, no shadow/colour/size animation, no animated GIF/WebP.
+       Those run on the graphics chip at the screen's full refresh rate.
        ===================================================================== */
     :root {
+      color-scheme: dark;
       --bg: #0d0f15;
-      --red: #b71c1c;
+      --red: #b71c1c;          /* same red as the DSR form */
       --red-hi: #d32f2f;
-      --muted: #a3aab8;
+      --text-2: rgba(255,255,255,.9);
+      --text-3: rgba(255,255,255,.84);
       --ease: cubic-bezier(.22,.9,.24,1);
       --spring: cubic-bezier(.34,1.56,.64,1);
       --curtain: cubic-bezier(.76,0,.24,1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    [hidden] { display: none !important; }
     html, body { min-height: 100%; background: var(--bg); }
     body {
       font-family: Inter, Roboto, Arial, sans-serif;
@@ -51,10 +61,12 @@
       -moz-osx-font-smoothing: grayscale;
       overflow-x: hidden;
     }
-    body.app-open { overflow: hidden; }
+    /* while Hub / DSR is open: no page scroll and no pull-to-refresh (it would wipe the form) */
+    html.app-open, body.app-open { overflow: hidden; overscroll-behavior: none; }
     a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
     img { -webkit-user-drag: none; user-select: none; display: block; }
-    :focus-visible { outline: 3px solid #ffb4ab; outline-offset: 3px; border-radius: 12px; }
+    :focus-visible { outline: 3px solid #ffb4ab; outline-offset: 3px; }
 
     /* ---------- BACKGROUND GLOW (moves by transform only) ---------- */
     .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; }
@@ -65,61 +77,76 @@
     @keyframes drift1 { from { transform: translate3d(0,0,0) scale(1); }    to { transform: translate3d(14vmax,12vmax,0) scale(1.15); } }
     @keyframes drift2 { from { transform: translate3d(0,0,0) scale(1.1); }  to { transform: translate3d(-16vmax,-10vmax,0) scale(.95); } }
     @keyframes drift3 { from { transform: translate3d(0,0,0) scale(.9); }   to { transform: translate3d(-18vmax,22vh,0) scale(1.1); } }
-    body.app-open .blob { animation-play-state: paused; }
+    body.app-open .blob, .lite .blob, .lite .deco-float { animation-play-state: paused; }
+    /* during the opening the phone only has to move the shutter and the entrance:
+       the glow, the floating drawings and the pulse start once everything has landed */
+    html:not(.settled) .blob, html:not(.settled) .deco-float,
+    html:not(.settled) .reminder.live .reminder-icon::after { animation-play-state: paused; }
 
-    /* ---------- GLASS LOOK (static — nothing here animates) ---------- */
+    /* ---------- GLASS LOOK (static: nothing here animates) ---------- */
     .glass {
       position: relative;
       background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, rgba(255,255,255,.05) 100%);
       border: 1px solid rgba(255,255,255,.18);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 12px 32px -12px rgba(0,0,0,.5);
     }
-    /* hover outline: a separate layer that only fades */
+    /* hover / keyboard outline: a separate layer that only fades */
     .ring::after {
       content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
       border: 2px solid rgba(255,255,255,.7);
       opacity: 0; transition: opacity .3s var(--ease);
     }
 
-    /* ---------- PAGE ---------- */
+    /* =====================================================================
+       PHONE LAYOUT (default). Both apps stay on screen without scrolling.
+       ===================================================================== */
     .app {
       position: relative; z-index: 1;
       min-height: 100vh; min-height: 100dvh;
-      display: flex; flex-direction: column; gap: 14px;
-      padding: calc(20px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; gap: 12px;
+      padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
       max-width: 1180px; margin: 0 auto;
     }
 
-    /* header */
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 0; }
-    .top .logo { height: 32px; width: auto; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 4px 0; min-height: 34px; }
+    .top .logo { height: 30px; width: auto; }
     .install-btn {
       position: relative; display: none;
       border: 0; background: #fff; color: #14171f;
-      border-radius: 999px; font: inherit; font-size: 13px; font-weight: 800;
+      border-radius: 999px; font-size: 13px; font-weight: 800;
       padding: 0 18px; min-height: 44px; cursor: pointer;
       transition: transform .3s var(--spring);
     }
     .install-btn::after { content: ""; position: absolute; inset: -4px; border-radius: inherit; border: 2px solid rgba(255,255,255,.55); opacity: 0; transition: opacity .25s var(--ease); }
 
+    /* offline note */
+    .net {
+      display: flex; align-items: center; gap: 10px;
+      border-radius: 14px; padding: 10px 14px;
+      font-size: 13px; line-height: 1.4; color: #fff;
+      background: rgba(255,170,0,.16); border: 1px solid rgba(255,196,84,.45);
+    }
+    .net svg { flex: 0 0 20px; width: 20px; height: 20px; color: #ffd27a; }
+
     /* greeting + DSR reminder */
-    .intro { display: flex; flex-direction: column; gap: 14px; }
-    .hello { padding: 6px 4px 0; }
-    .hello > span { display: block; font-size: 13px; color: var(--muted); }
-    .hello h1 { margin-top: 2px; font-size: 26px; font-weight: 800; letter-spacing: -.4px; overflow: hidden; padding-bottom: .08em; }
+    .intro { display: flex; flex-direction: column; gap: 12px; }
+    .hello { padding: 4px 4px 0; }
+    .hello > span { display: block; font-size: 13px; color: var(--text-3); }
+    .hello h1 { margin-top: 2px; font-size: 25px; font-weight: 800; letter-spacing: -.4px; overflow: hidden; padding-bottom: .08em; }
     .hello h1 span { display: inline-block; }
 
     .reminder {
       display: flex; align-items: center; gap: 12px;
-      border-radius: 18px; padding: 14px;
+      border-radius: 18px; padding: 12px;
       transition: transform .35s var(--ease);
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     }
     .reminder-icon {
-      position: relative; flex: 0 0 40px; height: 40px; border-radius: 12px;
+      position: relative; flex: 0 0 36px; height: 36px; border-radius: 11px;
       background: rgba(229,57,53,.28); border: 1px solid rgba(255,138,128,.35); color: #ffb4ab;
       display: grid; place-items: center;
     }
-    .reminder-icon svg { width: 22px; height: 22px; }
+    .reminder-icon svg { width: 20px; height: 20px; }
     .reminder.live .reminder-icon::after {
       content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 2px solid #ff8a80;
       animation: ping 1.8s var(--ease) infinite;
@@ -127,7 +154,7 @@
     @keyframes ping { from { transform: scale(1); opacity: .8; } to { transform: scale(1.6); opacity: 0; } }
     .reminder-text { flex: 1; min-width: 0; }
     .reminder-text strong { display: block; font-size: 14px; font-weight: 800; }
-    .reminder-text span { display: block; margin-top: 2px; font-size: 13px; color: rgba(255,255,255,.8); line-height: 1.4; }
+    .reminder-text span { display: block; margin-top: 1px; font-size: 12.5px; color: var(--text-2); line-height: 1.4; }
     .reminder-btn {
       position: relative; overflow: hidden;
       flex: 0 0 auto; display: grid; place-items: center;
@@ -138,13 +165,14 @@
     .reminder-btn::after { content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; transition: opacity .2s var(--ease); }
 
     /* ---------- TILES ---------- */
-    .tiles { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+    .tiles { flex: 1; display: flex; flex-direction: column; gap: 12px; }
     .tile {
-      flex: 1; min-height: 210px;
-      display: flex; flex-direction: column; justify-content: space-between; gap: 18px;
-      border-radius: 26px; padding: 22px 22px 24px;
+      flex: 1 1 0;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+      border-radius: 24px; padding: 18px;
       transition: transform .4s var(--ease);
       cursor: pointer; isolation: isolate;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     }
     .tile.hub { background: linear-gradient(140deg, rgba(229,57,53,.66) 0%, rgba(183,28,28,.42) 100%); border-color: rgba(255,170,160,.35); }
     .tile.dsr { background: linear-gradient(140deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.04) 100%); }
@@ -164,27 +192,28 @@
     .tile > *:not(.shine):not(.deco) { position: relative; z-index: 1; }
 
     .tile-icon {
-      width: 54px; height: 54px; border-radius: 16px;
+      width: 48px; height: 48px; border-radius: 14px;
       display: grid; place-items: center;
       background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
       transition: transform .5s var(--spring);
     }
-    .tile-icon svg { width: 28px; height: 28px; }
-    .tile-mid { display: flex; flex-wrap: wrap; gap: 8px; max-width: 74%; }
+    .tile-icon svg { width: 26px; height: 26px; }
+    .tile-mid { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 11px; border-radius: 999px;
-      font-size: 12px; font-weight: 700;
+      padding: 6px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; line-height: 1.3;
       background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.26);
       transition: transform .35s var(--spring);
     }
-    .chip svg { width: 13px; height: 13px; }
+    .chip svg { display: none; width: 13px; height: 13px; }
     .tile-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
-    .tile-name { display: block; font-size: 28px; font-weight: 900; letter-spacing: -.6px; line-height: 1.05; }
-    .tile-sub { display: block; margin-top: 6px; font-size: 14px; color: rgba(255,255,255,.82); }
+    .tile-name { display: block; font-size: 26px; font-weight: 900; letter-spacing: -.6px; line-height: 1.08; }
+    .tile-name .lb { display: none; }             /* names stay on one line on phones */
+    .tile-sub { display: block; margin-top: 4px; font-size: 13px; color: var(--text-2); }
     .tile-arrow {
-      flex: 0 0 46px; height: 46px; border-radius: 50%;
+      flex: 0 0 44px; height: 44px; border-radius: 50%;
       background: #fff; display: grid; place-items: center;
       transition: transform .45s var(--spring);
     }
@@ -193,14 +222,9 @@
     .dsr .tile-arrow { color: #1d2230; }
 
     /* ---------- TILE DRAWINGS (plain shapes, so they move on the graphics chip) ---------- */
-    .deco {
-      position: absolute; right: 6%; top: 7%;
-      width: 30%; max-width: 116px; aspect-ratio: 1 / 1;
-      z-index: 0; pointer-events: none;
-    }
+    .deco { position: absolute; right: 16px; top: 10px; width: 60px; aspect-ratio: 1 / 1; z-index: 0; pointer-events: none; }
     .deco-float { position: absolute; inset: 0; animation: bob 8s ease-in-out infinite alternate; will-change: transform; }
-    @keyframes bob { from { transform: translate3d(0,0,0) rotate(-2deg); } to { transform: translate3d(-6px,8px,0) rotate(2deg); } }
-    /* Hub: stacked documents */
+    @keyframes bob { from { transform: translate3d(0,0,0) rotate(-2deg); } to { transform: translate3d(-4px,6px,0) rotate(2deg); } }
     .sheet {
       position: absolute; width: 48%; height: 62%;
       border: 2px solid rgba(255,255,255,.34); border-radius: 12%;
@@ -213,7 +237,6 @@
                 display: flex; flex-direction: column; justify-content: center; gap: 12%; padding: 0 16%; }
     .sheet.s3 b { display: block; height: 2px; border-radius: 2px; background: rgba(255,255,255,.5); }
     .sheet.s3 b:nth-child(2) { width: 80%; } .sheet.s3 b:nth-child(4) { width: 60%; }
-    /* DSR: growing bar chart */
     .base { position: absolute; left: 8%; right: 8%; bottom: 14%; height: 2px; border-radius: 2px; background: rgba(255,255,255,.4); }
     .cbar {
       position: absolute; bottom: 14%; width: 13%;
@@ -227,22 +250,29 @@
     .cbar.b3 { left: 52%; height: 50%; }
     .cbar.b4 { left: 70%; height: 66%; }
     .trend { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-    .dot { position: absolute; left: 76.5%; top: 9%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; }
+    .dot { position: absolute; left: 76.5%; top: 9%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #fff; }
 
-    /* ---------- HELP ---------- */
+    /* ---------- HELP (the whole pill is the email link: easy to tap) ---------- */
     .help {
       display: flex; align-items: center; gap: 12px;
-      border-radius: 16px; padding: 12px 14px;
-      font-size: 13px; color: rgba(255,255,255,.8); line-height: 1.4;
+      border-radius: 16px; padding: 10px 14px; min-height: 48px;
+      font-size: 13px; color: var(--text-2); line-height: 1.4;
+      transition: transform .35s var(--ease);
     }
-    .help svg { flex: 0 0 22px; width: 22px; height: 22px; color: var(--muted); }
+    .help svg { flex: 0 0 22px; width: 22px; height: 22px; color: var(--text-3); }
     .help b { color: #fff; }
-    .help a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,.45); text-underline-offset: 2px; }
+    .help u { color: #fff; text-decoration-color: rgba(255,255,255,.45); text-underline-offset: 2px; white-space: nowrap; }
     .ios-hint { display: none; font-size: 13px; color: rgba(255,255,255,.85); text-align: center; border-radius: 14px; padding: 12px; }
 
-    /* ---------- HOVER (mouse only, so nothing sticks on phones) ---------- */
+    /* short phones: drop the small labels so both apps still fit */
+    @media (max-width: 759px) and (max-height: 719px) {
+      .tile-mid { display: none; }
+    }
+
+    /* ---------- PRESS + HOVER ---------- */
     .tile:active { transform: scale(.97); transition-duration: .12s; }
-    .reminder:active { transform: scale(.98); transition-duration: .12s; }
+    .reminder:active, .help:active { transform: scale(.98); transition-duration: .12s; }
+    .tile:focus-visible::after, .reminder:focus-visible::after, .help:focus-visible::after { opacity: 1; }
     @media (hover: hover) and (pointer: fine) {
       .tile:hover { transform: translate3d(0,-8px,0) scale(1.015); }
       .tile:hover::after { opacity: 1; }
@@ -260,7 +290,7 @@
       .tile:hover .cbar.b3 { transform: scaleY(1.12); transition-delay: .08s; }
       .tile:hover .cbar.b4 { transform: scaleY(1.08); transition-delay: .12s; }
       .tile:active { transform: translate3d(0,-4px,0) scale(.99); }
-      .reminder:hover { transform: translate3d(0,-3px,0); }
+      .reminder:hover, .help:hover { transform: translate3d(0,-3px,0); }
       .reminder:hover::after, .help:hover::after { opacity: 1; }
       .reminder:hover .reminder-btn { transform: scale(1.06); }
       .reminder:hover .reminder-btn::after { opacity: .12; }
@@ -276,6 +306,11 @@
       animation-fill-mode: backwards; animation-delay: var(--d, 0s);
     }
     .go:not(.settled) .a { will-change: transform, opacity; }
+    /* "prep": the home screen is drawn behind the red shutter while the logo shows,
+       so nothing heavy is left to do at the moment the shutter lifts */
+    .prep:not(.settled) .a { will-change: transform, opacity; }
+    /* phones that struggle (measured live): each tile comes in as ONE piece instead of 12 */
+    .lite .tile .a { animation: none !important; opacity: 1 !important; will-change: auto !important; }
     .go .a-up    { animation-name: aUp; }
     .go .a-left  { animation-name: aLeft; }
     .go .a-right { animation-name: aRight; }
@@ -295,7 +330,7 @@
     @keyframes aFade  { from { opacity: 0; } }
     @keyframes aGrow  { from { opacity: 1; transform: scaleY(0); } }
 
-    /* ---------- INTRO: logo + SABURI PLYWOOD appear together as one piece ---------- */
+    /* ---------- INTRO: full-screen hot red glass, lifts like a shutter ---------- */
     .intro-screen {
       position: fixed; inset: 0; z-index: 60;
       display: flex; align-items: center; justify-content: center;
@@ -325,28 +360,32 @@
       background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0));
     }
     .intro-screen::after {
-      content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 80px;
-      background: linear-gradient(180deg, rgba(60,0,8,.55), rgba(60,0,8,0));
+      content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 120px;
+      background: linear-gradient(180deg, rgba(60,0,8,.5), rgba(60,0,8,.18) 45%, rgba(60,0,8,0));
       pointer-events: none;
     }
-    .intro-screen.out {
-      transform: translate3d(0,-110%,0);
-      transition: transform .85s var(--curtain);
-    }
+    /* phones: a shorter, softer lift (less distance per frame = looks smoother) */
+    .intro-screen.out { transform: translate3d(0,calc(-100% - 130px),0); transition: transform .62s cubic-bezier(.5,0,.15,1); }
     .intro-stack {
       --mark: 150px; --word: 290px;
       position: relative; z-index: 1;
       display: flex; flex-direction: column; align-items: center; gap: 22px;
       opacity: 0; transform: translate3d(0,14px,0) scale(.96);
       will-change: opacity, transform;
-      filter: drop-shadow(0 10px 24px rgba(90,0,12,.45));
     }
+    /* soft shadows under the logo and the words: ready-made pictures, no live blur */
+    .intro-mark::before, .intro-word-wrap::before {
+      content: ""; position: absolute; z-index: -1; pointer-events: none;
+      background: center / 100% 100% no-repeat;
+    }
+    .intro-mark::before { inset: -45%; background-image: url(assets/saburi-mark-shadow.webp); }
+    .intro-word-wrap::before { inset: -62% -25%; background-image: url(assets/saburi-wordmark-shadow.webp); }
     .intro-screen.play .intro-stack { animation: stackIn .75s var(--ease) forwards; }
     @keyframes stackIn { to { opacity: 1; transform: translate3d(0,0,0) scale(1); } }
     .intro-mark { position: relative; width: var(--mark); }
     .intro-mark img { width: 100%; height: auto; }
-    .intro-word { width: var(--word); height: auto; }
-    /* one soft light sweep across the logo, after it has appeared */
+    .intro-word-wrap { position: relative; width: var(--word); max-width: 78vw; }
+    .intro-word { width: 100%; height: auto; }
     .intro-mark .sweep {
       position: absolute; inset: 0; overflow: hidden;
       -webkit-mask: url(assets/saburi-mark-white.webp) center / 100% 100% no-repeat;
@@ -374,7 +413,7 @@
     .layer.open { transform: translate3d(0,0,0); visibility: visible; transition: transform .5s var(--curtain), visibility 0s; }
     .bar {
       flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
-      padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+      padding: calc(6px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 6px calc(10px + env(safe-area-inset-left));
       background: linear-gradient(90deg, #7e1010, #14171f);
       border-bottom: 1px solid rgba(255,255,255,.12);
       color: #fff;
@@ -382,33 +421,36 @@
     .bar button {
       position: relative; overflow: hidden;
       border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.12); color: #fff;
-      font: inherit; font-size: 14px; font-weight: 700;
-      min-height: 40px; border-radius: 12px; cursor: pointer;
+      font-size: 14px; font-weight: 700;
+      min-height: 44px; border-radius: 12px; cursor: pointer;
       display: inline-flex; align-items: center; gap: 6px;
       transition: transform .25s var(--spring);
     }
     .bar button::after { content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; transition: opacity .2s; }
     .bar .home-btn { padding: 0 14px 0 10px; }
-    .bar .reload-btn { width: 40px; justify-content: center; margin-left: auto; }
+    .bar .reload-btn { width: 44px; justify-content: center; margin-left: auto; }
     .bar svg { width: 20px; height: 20px; }
-    .bar-title { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-title { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     @media (hover: hover) and (pointer: fine) { .bar button:hover { transform: scale(1.05); } .bar button:hover::after { opacity: .1; } }
     .bar button:active { transform: scale(.95); }
     .frames { position: relative; flex: 1; background: #fff; }
     .app-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; visibility: hidden; }
     .app-frame.active { visibility: visible; }
 
-    /* loading screen: white logo breathes, red ring spins (both on the graphics chip) */
+    /* loading / offline / slow screen */
     .loader {
       position: absolute; inset: 0; z-index: 2;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      padding: 24px; text-align: center;
       background: radial-gradient(60% 50% at 30% 20%, rgba(229,57,53,.35), transparent 70%), radial-gradient(60% 50% at 80% 90%, rgba(63,81,181,.35), transparent 70%), #0d0f15;
-      color: #c4c9d4; font-size: 14px; font-weight: 600;
+      color: var(--text-2); font-size: 14px; line-height: 1.5;
       opacity: 0; visibility: hidden;
       transition: opacity .35s var(--ease), visibility 0s linear .35s;
     }
     .loader.show { opacity: 1; visibility: visible; transition: opacity .2s var(--ease), visibility 0s; }
-    .spin-wrap { position: relative; width: 150px; height: 150px; display: grid; place-items: center; }
+    .loader strong { color: #fff; font-size: 16px; font-weight: 800; }
+    .loader p { max-width: 300px; }
+    .spin-wrap { position: relative; width: 150px; height: 150px; display: grid; place-items: center; margin-bottom: 12px; }
     .spin-wrap img { width: 84px; height: auto; animation: breathe 1.6s ease-in-out infinite; will-change: transform; }
     .spin-ring {
       position: absolute; inset: 0; border-radius: 50%;
@@ -417,36 +459,127 @@
               mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
       animation: spin .9s linear infinite; will-change: transform;
     }
+    .loader[data-state="offline"] .spin-ring { animation-play-state: paused; opacity: .25; }
+    .loader[data-state="offline"] .spin-wrap img { animation-play-state: paused; opacity: .6; }
     @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
+    .loader-actions button, .loader-actions a {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 44px; padding: 0 18px; border-radius: 12px;
+      font-size: 14px; font-weight: 800; cursor: pointer;
+      transition: transform .25s var(--spring);
+    }
+    .loader-actions button { border: 0; background: #fff; color: #14171f; }
+    .loader-actions a { border: 1px solid rgba(255,255,255,.35); color: #fff; }
+    .loader-actions button:active, .loader-actions a:active { transform: scale(.96); }
 
-    /* ---------- COMPUTER / TABLET ---------- */
+    /* small message over the open app */
+    .toast {
+      position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 3;
+      max-width: calc(100% - 32px);
+      padding: 12px 16px; border-radius: 14px;
+      background: #14171f; color: #fff; font-size: 13.5px; font-weight: 600; line-height: 1.4; text-align: center;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      transform: translate3d(-50%,0,0);
+      animation: toastIn .4s var(--ease);
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translate3d(-50%,12px,0); } }
+
+    /* =====================================================================
+       TABLET (two tiles side by side)
+       ===================================================================== */
     @media (min-width: 760px) {
+      .app { padding: 24px 24px 22px; gap: 18px; justify-content: center; }
+      .top { min-height: 44px; }
+      .top .logo { height: 38px; }
+      .install-btn { font-size: 14px; padding: 0 22px; }
+      .hello > span { font-size: 15px; }
+      .hello h1 { font-size: 34px; letter-spacing: -.7px; }
+      .reminder { padding: 16px 18px; }
+      .reminder-icon { flex-basis: 40px; height: 40px; border-radius: 12px; }
+      .reminder-icon svg { width: 22px; height: 22px; }
+      .reminder-text strong { font-size: 15px; }
+      .reminder-text span { font-size: 14px; margin-top: 2px; }
+      .reminder-btn { padding: 0 20px; font-size: 14px; }
+      .tiles { flex: 1 1 auto; max-height: 460px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .tile { min-height: 300px; border-radius: 28px; padding: 26px; gap: 16px; }
+      .tile-icon { width: 60px; height: 60px; border-radius: 18px; }
+      .tile-icon svg { width: 32px; height: 32px; }
+      .tile-mid { gap: 8px; }
+      .chip { font-size: 13px; padding: 7px 12px; }
+      .chip svg { display: block; }
+      .tile-name { font-size: 34px; letter-spacing: -.9px; }
+      .tile-sub { font-size: 15px; margin-top: 6px; }
+      .tile-arrow { flex-basis: 52px; height: 52px; }
+      .tile-arrow svg { width: 24px; height: 24px; }
+      .deco { right: 22px; top: 16px; width: 78px; }
+      .help { align-self: center; font-size: 14px; }
+      .net { align-self: center; }
+      .intro-stack { --mark: 190px; --word: 380px; gap: 26px; }
+      .intro-screen.out { transition: transform .85s var(--curtain); }
+    }
+    @media (min-width: 900px) {
+      .intro { flex-direction: row; align-items: center; gap: 24px; }
+      .hello { flex: 1; min-width: 0; padding: 0 4px; }
+      .reminder { flex: 0 1 500px; }
+    }
+
+    /* =====================================================================
+       COMPUTER (big two-line names, big drawings)
+       ===================================================================== */
+    @media (min-width: 1024px) {
       .app { padding: 28px 24px 26px; gap: 22px; }
       .top .logo { height: 40px; }
-      .install-btn { font-size: 14px; padding: 0 22px; }
-      .intro { flex-direction: row; align-items: center; gap: 24px; }
-      .hello { flex: 1; padding: 0 4px; }
-      .hello > span { font-size: 15px; }
       .hello h1 { font-size: 38px; letter-spacing: -.8px; }
-      .reminder { flex: 0 1 520px; padding: 16px 18px; }
-      .reminder-text strong { font-size: 15px; }
-      .reminder-text span { font-size: 14px; }
-      .reminder-btn { padding: 0 20px; font-size: 14px; }
-      .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-      .tile { min-height: 380px; border-radius: 30px; padding: 36px 36px 38px; }
+      .reminder { flex-basis: 520px; }
+      .tiles { gap: 20px; max-height: 560px; }
+      .tile { min-height: 380px; border-radius: 30px; padding: 36px 36px 38px; gap: 18px; }
       .tile-icon { width: 72px; height: 72px; border-radius: 22px; }
       .tile-icon svg { width: 38px; height: 38px; }
       .tile-mid { gap: 10px; max-width: 62%; }
       .chip { font-size: 13.5px; padding: 8px 14px; }
       .chip svg { width: 15px; height: 15px; }
       .tile-name { font-size: 50px; letter-spacing: -1.4px; line-height: 1; }
+      .tile-name .lb { display: inline; }
       .tile-sub { font-size: 17px; margin-top: 10px; }
       .tile-arrow { flex-basis: 62px; height: 62px; }
       .tile-arrow svg { width: 28px; height: 28px; }
       .deco { right: 5%; top: 6%; width: 36%; max-width: 220px; }
-      .help { align-self: center; font-size: 14px; }
-      .intro-stack { --mark: 190px; --word: 380px; gap: 26px; }
+      .dot { width: 10px; height: 10px; margin: -5px 0 0 -5px; }
+      @keyframes bob { from { transform: translate3d(0,0,0) rotate(-2deg); } to { transform: translate3d(-6px,8px,0) rotate(2deg); } }
+    }
+    /* laptops with short screens: tighten so nothing needs scrolling */
+    @media (min-width: 1024px) and (max-height: 800px) {
+      .app { padding-top: 18px; padding-bottom: 16px; gap: 16px; }
+      .tiles { gap: 16px; }
+      .tile { min-height: 300px; padding: 28px 32px 30px; gap: 14px; }
+      .tile-icon { width: 62px; height: 62px; border-radius: 19px; }
+      .tile-icon svg { width: 32px; height: 32px; }
+      .tile-name { font-size: 42px; letter-spacing: -1.1px; }
+      .tile-sub { font-size: 15px; margin-top: 8px; }
+      .tile-arrow { flex-basis: 54px; height: 54px; }
+      .deco { max-width: 180px; }
+    }
+    @media (min-width: 1024px) and (max-height: 690px) {
+      .hello h1 { font-size: 32px; }
+      .tile { min-height: 260px; padding: 24px 28px 26px; }
+      .tile-name { font-size: 36px; }
+      .chip { font-size: 13px; padding: 6px 12px; }
+      .deco { max-width: 150px; }
+    }
+
+    /* big monitors: use more of the screen */
+    @media (min-width: 1600px) and (min-height: 950px) {
+      .app { max-width: 1340px; gap: 26px; }
+      .top .logo { height: 46px; }
+      .hello h1 { font-size: 44px; }
+      .tiles { max-height: 640px; gap: 24px; }
+      .tile { padding: 44px 44px 46px; }
+      .tile-name { font-size: 58px; }
+      .tile-sub { font-size: 18px; }
+      .chip { font-size: 14.5px; padding: 9px 16px; }
+      .deco { max-width: 250px; }
     }
 
     /* "reduce motion" setting: keep the opening, stop only the never-ending movement */
@@ -464,7 +597,7 @@
         <img src="assets/saburi-mark-white.webp" alt="" width="560" height="553">
         <span class="sweep"></span>
       </div>
-      <img class="intro-word" src="assets/saburi-wordmark-white.webp" alt="Saburi Plywood" width="1030" height="414">
+      <div class="intro-word-wrap"><img class="intro-word" src="assets/saburi-wordmark-white.webp" alt="" width="1030" height="414"></div>
     </div>
   </div>
 
@@ -472,6 +605,9 @@
     (function () {
       var root = document.documentElement;
       var introDone = false;
+
+      // clearly low-power phones: simple mode straight away
+      if ((navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 2) root.classList.add('lite');
 
       // wait for fonts + logos, so the first animated frame is already perfect (no jump)
       var assetsReady = Promise.race([
@@ -481,12 +617,14 @@
         ]),
         new Promise(function (r) { setTimeout(r, 600); })
       ]);
+      function startHomeNow() {
+        if (root.classList.contains('go')) return;
+        root.classList.add('go');
+        setTimeout(function () { root.classList.add('settled'); }, 2600);
+      }
       window.__startHome = function () {
         assetsReady.then(function () {
-          requestAnimationFrame(function () { requestAnimationFrame(function () {
-            root.classList.add('go');
-            setTimeout(function () { root.classList.add('settled'); }, 2600);
-          }); });
+          requestAnimationFrame(function () { requestAnimationFrame(startHomeNow); });
         });
       };
 
@@ -500,22 +638,60 @@
       var intro = document.getElementById('intro');
       intro.style.display = 'flex';
 
+      // ---- live speed check: watches real frames while the logo is on screen ----
+      function sampleFrames(ms, done) {
+        var first = 0, last = 0, gaps = [];
+        function tick(t) {
+          if (last) gaps.push(t - last); else first = t;
+          last = t;
+          if (t - first < ms) requestAnimationFrame(tick); else done(gaps);
+        }
+        requestAnimationFrame(tick);
+      }
+      function struggling(gaps) {
+        if (gaps.length < 6) return false;
+        var sorted = gaps.slice().sort(function (x, y) { return x - y; });
+        var usual = sorted[Math.floor(sorted.length / 2)];              // the screen's normal frame time
+        var late = gaps.filter(function (g) { return g > usual * 1.6 + 1; }).length;
+        return usual > 21 || Math.max.apply(null, gaps) > 120 || late / gaps.length > 0.18;
+      }
+      // Draw the home screen behind the shutter now, so the lift itself has nothing heavy to do.
+      function prepare() {
+        if (introDone) return;
+        root.classList.add('prep');
+        if (root.classList.contains('lite')) return;
+        sampleFrames(450, function (gaps) {
+          if (!introDone && struggling(gaps)) root.classList.add('lite');   // this phone gets the simple entrance
+        });
+      }
+
       function finish() {
         if (introDone) return;
         introDone = true;
-        intro.classList.add('out');               // fades away...
-        window.__startHome();                     // ...while the home screen builds in underneath
-        setTimeout(function () { intro.remove(); }, 950);
-      }
-      // play only when both logos are ready, so they appear together in one smooth move
-      var imgs = [].slice.call(intro.querySelectorAll('img'));
-      Promise.all(imgs.map(function (im) { return im.decode ? im.decode().catch(function(){}) : Promise.resolve(); }))
-        .then(function () {
-          requestAnimationFrame(function () {
-            intro.classList.add('play');
-            setTimeout(finish, 1650);              // 0.75s in + ~0.9s hold
-          });
+        var sweep = intro.querySelector('.sweep');
+        if (sweep) sweep.remove();                                          // finished long before; frees a layer
+        requestAnimationFrame(function () {
+          intro.classList.add('out');             // the red shutter lifts...
+          startHomeNow();                         // ...and the home screen comes in, in the same frame
         });
+        setTimeout(function () { intro.remove(); }, 1000);
+      }
+
+      // play only when the logos and their shadows are ready, so they appear together in one smooth move
+      var waits = [].slice.call(intro.querySelectorAll('img')).map(function (im) {
+        return im.decode ? im.decode().catch(function () {}) : Promise.resolve();
+      });
+      ['assets/saburi-mark-shadow.webp', 'assets/saburi-wordmark-shadow.webp'].forEach(function (src) {
+        var im = new Image(); im.src = src;
+        waits.push(im.decode ? im.decode().catch(function () {}) : Promise.resolve());
+      });
+      Promise.race([Promise.all(waits), new Promise(function (r) { setTimeout(r, 1200); })]).then(function () {
+        requestAnimationFrame(function () {
+          intro.classList.add('play');
+          setTimeout(prepare, 800);                // logo has landed: build the home screen behind it
+          setTimeout(finish, 1650);                // 0.75s in + ~0.9s hold
+        });
+      });
       intro.addEventListener('click', finish);    // tap to skip
       setTimeout(finish, 3500);                   // never wait longer
     })();
@@ -523,26 +699,31 @@
 
   <div class="bg a a-fade" style="--d:0s" aria-hidden="true"><div class="blob one"></div><div class="blob two"></div><div class="blob three"></div></div>
 
-  <div class="app">
+  <div class="app" id="home">
 
     <header class="top">
       <img class="logo a a-left" style="--d:.05s" src="assets/saburi-logo-white.webp" alt="Saburi Plywood" width="400" height="117" decoding="async">
       <button type="button" class="install-btn a a-pop" style="--d:.5s" id="installBtn">Install app</button>
     </header>
 
-    <section class="intro">
+    <div class="net" id="netNote" role="status" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 4-2.6"/><path d="M19 13a10 10 0 0 0-5.3-2.9"/><path d="M2 9.2a15 15 0 0 1 4-2.7"/><path d="M22 9.2A15 15 0 0 0 10.5 5.1"/><path d="M12 20h.01"/></svg>
+      <span>You're offline. Resource Hub and DSR Form need internet.</span>
+    </div>
+
+    <section class="intro" aria-label="Today">
       <div class="hello">
         <span class="a a-up" style="--d:.12s" id="today">&nbsp;</span>
         <h1><span class="a a-rise" style="--d:.18s" id="greeting">Welcome</span></h1>
       </div>
 
       <a class="reminder glass ring a a-right" style="--d:.3s" href="dsr/" data-app="dsr" id="reminder">
-        <div class="reminder-icon">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div class="reminder-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         </div>
         <div class="reminder-text">
           <strong>Today's DSR</strong>
-          <span id="dsrNote">Today's report opens at 6:00 PM.</span>
+          <span id="dsrNote">Opens at 6:00 PM.</span>
         </div>
         <span class="reminder-btn">Fill DSR</span>
       </a>
@@ -550,7 +731,7 @@
 
     <main class="tiles">
       <!-- RESOURCE HUB -->
-      <a class="tile hub glass a a-tile" style="--d:.42s" href="hub/" data-app="hub">
+      <a class="tile hub glass a a-tile" style="--d:.42s" href="hub/" data-app="hub" aria-label="Open Resource Hub: all sales resources in one place">
         <span class="shine" aria-hidden="true"></span>
         <div class="deco" aria-hidden="true">
           <div class="deco-float">
@@ -562,7 +743,7 @@
         <div class="tile-icon a a-pop" style="--d:.67s">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         </div>
-        <div class="tile-mid" aria-label="Inside the Resource Hub">
+        <div class="tile-mid">
           <span class="chip a a-pop" style="--d:.88s">Price lists</span>
           <span class="chip a a-pop" style="--d:.94s">Catalogues</span>
           <span class="chip a a-pop" style="--d:1s">Brochures</span>
@@ -570,7 +751,7 @@
         </div>
         <div class="tile-bottom">
           <div class="a a-up" style="--d:.77s">
-            <strong class="tile-name">Resource<br>Hub</strong>
+            <strong class="tile-name">Resource<br class="lb"> Hub</strong>
             <span class="tile-sub">All sales resources in one place</span>
           </div>
           <span class="tile-arrow a a-spin" style="--d:1.02s" aria-hidden="true">
@@ -580,7 +761,7 @@
       </a>
 
       <!-- DSR FORM -->
-      <a class="tile dsr glass a a-tile" style="--d:.54s" href="dsr/" data-app="dsr">
+      <a class="tile dsr glass a a-tile" style="--d:.54s" href="dsr/" data-app="dsr" aria-label="Open DSR Form: fill your Daily Sales Report">
         <span class="shine" aria-hidden="true"></span>
         <div class="deco" aria-hidden="true">
           <div class="deco-float">
@@ -598,17 +779,17 @@
         <div class="tile-icon a a-pop" style="--d:.79s">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>
         </div>
-        <div class="tile-mid" aria-label="What you fill in the DSR">
-          <span class="chip a a-pop" style="--d:1s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Visits</span>
-          <span class="chip a a-pop" style="--d:1.06s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Orders</span>
-          <span class="chip a a-pop" style="--d:1.12s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Payments</span>
-          <span class="chip a a-pop" style="--d:1.18s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Leads</span>
-          <span class="chip a a-pop" style="--d:1.24s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Meetings</span>
-          <span class="chip a a-pop" style="--d:1.3s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Competitor</span>
+        <div class="tile-mid">
+          <span class="chip a a-pop" style="--d:1s"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Visits</span>
+          <span class="chip a a-pop" style="--d:1.06s"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Orders</span>
+          <span class="chip a a-pop" style="--d:1.12s"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Payments</span>
+          <span class="chip a a-pop" style="--d:1.18s"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Leads</span>
+          <span class="chip a a-pop" style="--d:1.24s"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Meetings</span>
+          <span class="chip a a-pop" style="--d:1.3s"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Competitor</span>
         </div>
         <div class="tile-bottom">
           <div class="a a-up" style="--d:.89s">
-            <strong class="tile-name">DSR<br>Form</strong>
+            <strong class="tile-name">DSR<br class="lb"> Form</strong>
             <span class="tile-sub">Fill your Daily Sales Report</span>
           </div>
           <span class="tile-arrow a a-spin" style="--d:1.14s" aria-hidden="true">
@@ -620,60 +801,103 @@
 
     <div class="ios-hint glass" id="iosHint">To install on iPhone: tap <b>Share</b>, then <b>Add to Home Screen</b>.</div>
 
-    <footer class="help glass ring a a-up" style="--d:1.2s">
+    <a class="help glass ring a a-up" style="--d:1.2s" href="mailto:info@saburiply.com">
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/></svg>
-      <span><b>Need help?</b> Sales Operations team &middot; <a href="mailto:info@saburiply.com">info@saburiply.com</a></span>
-    </footer>
+      <span><b>Need help?</b> Email the Sales Operations team: <u>info@saburiply.com</u></span>
+    </a>
   </div>
 
   <!-- APP SCREEN: Hub / DSR open here, instantly -->
-  <div class="layer" id="layer" aria-hidden="true">
+  <div class="layer" id="layer" role="region" aria-label="Open app" aria-hidden="true">
     <div class="bar">
       <button type="button" class="home-btn" id="homeBtn" aria-label="Back to home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
         Home
       </button>
       <span class="bar-title" id="barTitle"></span>
-      <button type="button" class="reload-btn" id="reloadBtn" aria-label="Reload this app">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+      <button type="button" class="reload-btn" id="reloadBtn" aria-label="Reload">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
       </button>
     </div>
     <div class="frames" id="frames">
-      <div class="loader" id="loader">
-        <div class="spin-wrap"><span class="spin-ring"></span><img src="assets/saburi-mark-white.webp" alt="" width="560" height="553" decoding="async"></div>
-        <span id="loaderText">Opening…</span>
+      <div class="loader" id="loader" role="status">
+        <div class="spin-wrap" aria-hidden="true"><span class="spin-ring"></span><img src="assets/saburi-mark-white.webp" alt="" width="560" height="553" decoding="async"></div>
+        <strong id="loaderTitle">Opening…</strong>
+        <p id="loaderText"></p>
+        <div class="loader-actions" id="loaderActions" hidden>
+          <button type="button" id="retryBtn">Try again</button>
+          <a id="browserBtn" href="#" target="_blank" rel="noopener">Open in browser</a>
+        </div>
       </div>
+      <div class="toast" id="toast" role="status" hidden></div>
     </div>
   </div>
 
   <script>
     // ================= THE TWO APPS =================
-    if ((navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3) {
-      document.documentElement.classList.add('lite');   // low-power phones: background glow stays still
-      var st = document.createElement('style');
-      st.textContent = '.lite .blob, .lite .deco-float { animation: none; }';
-      document.head.appendChild(st);
-    }
-
     var APPS = {
       hub: { title: 'Resource Hub', url: 'https://script.google.com/macros/s/AKfycby1QnPsMgcKn8BGaJvxnxBVuzC83ZBsORvrFiS6zKjWDq2CxwRGavhFGfy-VnjVfr0t/exec' },
       dsr: { title: 'DSR Form',     url: 'https://script.google.com/macros/s/AKfycbzCp3U0bTIoWtPwdfob7Sqc6UEQzw6_e2eVFdp47QcPePKz3wErVz1K8kDs1J433T5r/exec' }
     };
+    var MIN = 60000, HOUR = 60 * MIN;
+    var SLOW_AFTER = 12000;                 // show help if an app is still opening after this long
+
+    var home = document.getElementById('home');
     var layer = document.getElementById('layer');
     var framesBox = document.getElementById('frames');
     var loader = document.getElementById('loader');
-    var frames = {}, current = null;
+    var loaderTitle = document.getElementById('loaderTitle');
+    var loaderText = document.getElementById('loaderText');
+    var loaderActions = document.getElementById('loaderActions');
+    var browserBtn = document.getElementById('browserBtn');
+    var homeBtn = document.getElementById('homeBtn');
+    var toast = document.getElementById('toast');
+    var netNote = document.getElementById('netNote');
 
+    var frames = {};      // key -> iframe
+    var meta = {};        // key -> { created, day, shown, hiddenAt, loaded, nagged }
+    var current = null;   // which app is open
+    var opener = null;    // what was tapped (focus returns there)
+    var slowTimer = null, toastTimer = null;
+
+    function dayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+    function isOffline() { return navigator.onLine === false; }
+    function canWarm() {
+      var c = navigator.connection;
+      return !isOffline() && document.visibilityState !== 'hidden' && !(c && (c.saveData || /2g/.test(c.effectiveType || '')));
+    }
+
+    // A copy kept in the background can go out of date. Old copies are thrown away:
+    //  - when the date has changed (the DSR form works out "today" when it loads)
+    //  - when it was loaded in the background and never opened for 30 minutes
+    //  - when it was left closed for more than 4 hours
+    function isStale(key) {
+      var m = meta[key];
+      if (!m) return false;
+      var now = Date.now();
+      if (m.day !== dayKey()) return true;
+      if (!m.shown && now - m.created > 30 * MIN) return true;
+      if (m.hiddenAt && now - m.hiddenAt > 4 * HOUR) return true;
+      return false;
+    }
+    function dropFrame(key) {
+      if (frames[key]) { frames[key].remove(); delete frames[key]; }
+      delete meta[key];
+    }
+    // Creates the app once and keeps it, so it is ready (and stays logged in) next time.
+    // A brand-new iframe is used for every reload, so the phone's back button never gets confused.
     function ensureFrame(key) {
       if (frames[key]) return frames[key];
+      if (isOffline()) return null;
       var f = document.createElement('iframe');
       f.className = 'app-frame';
       f.title = APPS[key].title;
       f.allow = 'camera; microphone; geolocation; clipboard-write';
-      f.dataset.loaded = '0';
+      meta[key] = { created: Date.now(), day: dayKey(), shown: false, hiddenAt: 0, loaded: false, nagged: false };
       f.addEventListener('load', function () {
-        f.dataset.loaded = '1';
-        if (current === key) loader.classList.remove('show');
+        if (frames[key] !== f) return;
+        meta[key].loaded = true;
+        if (current === key) setLoader('hide');
       });
       f.src = APPS[key].url;
       framesBox.appendChild(f);
@@ -681,63 +905,162 @@
       return f;
     }
 
-    function openApp(key, addHistory) {
-      current = key;
-      var f = ensureFrame(key);
-      Object.keys(frames).forEach(function (k) { frames[k].classList.toggle('active', k === key); });
-      document.getElementById('barTitle').textContent = APPS[key].title;
-      document.getElementById('loaderText').textContent = 'Opening ' + APPS[key].title + '…';
-      loader.classList.toggle('show', f.dataset.loaded !== '1');
-      layer.classList.add('open');
-      layer.setAttribute('aria-hidden', 'false');
-      document.body.classList.add('app-open');
-      if (addHistory) history.pushState({ app: key }, '', '#' + key);
+    // ---------- loading / slow / offline screen ----------
+    function setLoader(state) {
+      clearTimeout(slowTimer);
+      var name = current ? APPS[current].title : 'the app';
+      loader.dataset.state = state;
+      loader.classList.toggle('show', state !== 'hide');
+      if (state === 'loading') {
+        loaderTitle.textContent = 'Opening ' + name + '…';
+        loaderText.textContent = '';
+        loaderActions.hidden = true;
+        slowTimer = setTimeout(function () {
+          if (current && meta[current] && !meta[current].loaded) setLoader('slow');
+        }, SLOW_AFTER);
+      } else if (state === 'slow') {
+        loaderTitle.textContent = 'Still opening ' + name + '…';
+        loaderText.textContent = 'This is taking longer than usual. Check your internet, then try again.';
+        browserBtn.hidden = false;
+        if (current) browserBtn.href = APPS[current].url;
+        loaderActions.hidden = false;
+      } else if (state === 'offline') {
+        loaderTitle.textContent = "You're offline";
+        loaderText.textContent = name + ' needs internet. It will open by itself when you are back online.';
+        browserBtn.hidden = true;
+        loaderActions.hidden = false;
+      }
     }
-    function closeApp() {
-      current = null;
-      layer.classList.remove('open');
-      layer.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('app-open');
+    function showToast(text) {
+      clearTimeout(toastTimer);
+      toast.textContent = text;
+      toast.hidden = false;
+      toastTimer = setTimeout(function () { toast.hidden = true; }, 7000);
     }
 
+    // ---------- open / close ----------
+    function showFrame(key) {
+      var f = ensureFrame(key);
+      Object.keys(frames).forEach(function (k) { frames[k].classList.toggle('active', k === key); });
+      if (f) { meta[key].shown = true; meta[key].hiddenAt = 0; }
+      setLoader(!f ? 'offline' : (meta[key].loaded ? 'hide' : 'loading'));
+    }
+    function openApp(key, addHistory) {
+      if (current !== key && isStale(key)) dropFrame(key);
+      if (current && current !== key && meta[current]) meta[current].hiddenAt = Date.now();
+      current = key;
+      document.getElementById('barTitle').textContent = APPS[key].title;
+      toast.hidden = true;
+      showFrame(key);
+      layer.classList.add('open');
+      layer.setAttribute('aria-hidden', 'false');
+      home.inert = true;                                   // keyboard and screen readers stay inside the open app
+      document.documentElement.classList.add('app-open');
+      document.body.classList.add('app-open');
+      try { localStorage.setItem('saburiLastApp', key); } catch (e) {}
+      if (addHistory) history.pushState({ app: key }, '', '#' + key);
+      setTimeout(function () { if (current === key) homeBtn.focus({ preventScroll: true }); }, 80);
+    }
+    function closeApp() {
+      if (!current) return;
+      if (meta[current]) meta[current].hiddenAt = Date.now();
+      current = null;
+      clearTimeout(slowTimer);
+      layer.classList.remove('open');
+      layer.setAttribute('aria-hidden', 'true');
+      home.inert = false;
+      document.documentElement.classList.remove('app-open');
+      document.body.classList.remove('app-open');
+      if (opener && document.contains(opener)) opener.focus({ preventScroll: true });
+      opener = null;
+    }
+    function reloadCurrent() {
+      if (!current) return;
+      toast.hidden = true;
+      dropFrame(current);
+      showFrame(current);
+    }
+    function goHome() {
+      var hadState = history.state && history.state.app;
+      closeApp();                                          // closes at once, no waiting
+      if (hadState) history.back();                        // keeps the phone's back button in step
+    }
+
+    // tiles and the DSR reminder open the app inside this page
     document.querySelectorAll('[data-app]').forEach(function (el) {
       var key = el.getAttribute('data-app');
-      el.addEventListener('pointerdown', function () { ensureFrame(key); }, { passive: true });
-      el.addEventListener('mouseenter', function () { ensureFrame(key); });
+      // start loading the moment a finger touches or the mouse comes near
+      el.addEventListener('pointerdown', function () { if (!isStale(key)) ensureFrame(key); }, { passive: true });
+      el.addEventListener('mouseenter', function () { if (!isStale(key)) ensureFrame(key); });
       el.addEventListener('click', function (e) {
-        if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (e.ctrlKey || e.metaKey || e.shiftKey) return;  // "open in new tab" still works
         e.preventDefault();
+        opener = el;
         openApp(key, true);
       });
     });
-    document.getElementById('homeBtn').addEventListener('click', function () {
-      if (history.state && history.state.app) history.back(); else closeApp();
-    });
+    homeBtn.addEventListener('click', goHome);
+    document.getElementById('reloadBtn').addEventListener('click', reloadCurrent);
+    document.getElementById('retryBtn').addEventListener('click', reloadCurrent);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) goHome(); });
+
+    // phone back button / browser back and forward
     window.addEventListener('popstate', function (e) {
       var key = e.state && e.state.app;
-      if (key && APPS[key]) openApp(key, false); else closeApp();
+      if (key && APPS[key]) { if (current !== key) openApp(key, false); }
+      else closeApp();
     });
-    document.getElementById('reloadBtn').addEventListener('click', function () {
-      if (!current) return;
-      var f = frames[current];
-      f.dataset.loaded = '0';
-      loader.classList.add('show');
-      f.src = APPS[current].url;
-    });
-    (function () {
+    // links like .../saburi-apps/#dsr (also used by the app-icon shortcuts)
+    function openFromHash() {
       var key = location.hash.replace('#', '');
-      if (APPS[key]) { history.replaceState(null, '', location.pathname); openApp(key, true); }
-    })();
+      if (APPS[key] && current !== key) {
+        history.replaceState(null, '', location.pathname + location.search);
+        openApp(key, true);
+      }
+    }
+    window.addEventListener('hashchange', openFromHash);
+    openFromHash();
 
-    // load both apps quietly in the background (skipped on data saver / slow network)
+    // ---------- load both apps quietly in the background, most-used first ----------
+    function warm() {
+      if (!canWarm()) return;
+      var last = null;
+      try { last = localStorage.getItem('saburiLastApp'); } catch (e) {}
+      var order = last === 'hub' ? ['hub', 'dsr'] : ['dsr', 'hub'];
+      ensureFrame(order[0]);
+      setTimeout(function () { if (canWarm()) ensureFrame(order[1]); }, 1500);
+    }
     window.addEventListener('load', function () {
-      var c = navigator.connection;
-      if (c && (c.saveData || /2g/.test(c.effectiveType || ''))) return;
-      var warm = function () { ensureFrame('dsr'); ensureFrame('hub'); };
       // wait until the opening has finished, so loading never steals frames from the animation
       setTimeout(function () {
         if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2000 }); else warm();
       }, 2800);
+    });
+
+    // ---------- internet on / off ----------
+    function syncNet() { netNote.hidden = !isOffline(); }
+    window.addEventListener('offline', function () {
+      syncNet();
+      if (current && meta[current] && !meta[current].loaded) { dropFrame(current); setLoader('offline'); }
+    });
+    window.addEventListener('online', function () {
+      syncNet();
+      if (current && !frames[current]) reloadCurrent();
+      else if (!current) setTimeout(warm, 800);
+    });
+    syncNet();
+
+    // ---------- coming back to the app after a while ----------
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      refreshToday();
+      Object.keys(frames).forEach(function (k) { if (k !== current && isStale(k)) dropFrame(k); });
+      if (!current) { setTimeout(warm, 800); return; }
+      var m = meta[current];
+      if (m && m.day !== dayKey() && !m.nagged) {
+        m.nagged = true;
+        showToast("It's a new day. Tap the reload button (top right) to refresh " + APPS[current].title + '.');
+      }
     });
 
     // ================= DATE, GREETING, DSR NOTE =================
@@ -750,8 +1073,8 @@
       var open = hour >= 18;   // same rule as the DSR form
       document.getElementById('reminder').classList.toggle('live', open);
       document.getElementById('dsrNote').textContent = open
-        ? "Today's report is open now. Please fill it before you finish your day."
-        : "Today's report opens at 6:00 PM. You can still file for the two days before.";
+        ? 'Open now. Fill it before you end your day.'
+        : 'Opens at 6:00 PM. Earlier days can be filed now.';
     }
     refreshToday();
     setInterval(refreshToday, 60000);

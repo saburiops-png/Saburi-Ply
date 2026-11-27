@@ -1,7 +1,7 @@
 {
   "name": "Saburi Ply",
   "short_name": "Saburi Ply",
-  "description": "Saburi Ply \u2014 Resource Hub and DSR Form",
+  "description": "Resource Hub and DSR Form for the Saburi sales team.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -39,6 +39,62 @@
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "shortcuts": [
+    {
+      "name": "DSR Form",
+      "short_name": "DSR",
+      "description": "Fill your Daily Sales Report",
+      "url": "./#dsr",
+      "icons": [
+        {
+          "src": "icons/shortcut-dsr.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Resource Hub",
+      "short_name": "Hub",
+      "description": "All sales resources in one place",
+      "url": "./#hub",
+      "icons": [
+        {
+          "src": "icons/shortcut-hub.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/home-phone.jpg",
+      "sizes": "780x1688",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Saburi Ply home screen with Resource Hub and DSR Form"
+    },
+    {
+      "src": "screenshots/home-wide.jpg",
+      "sizes": "1280x800",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Saburi Ply on a computer"
     }
   ]
 }
