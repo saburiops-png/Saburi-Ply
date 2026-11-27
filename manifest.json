@@ -1,14 +1,14 @@
 {
-  "name": "Saburi Apps",
-  "short_name": "Saburi Apps",
-  "description": "Saburi Internal Resource Hub and DSR Form",
+  "name": "Saburi Ply",
+  "short_name": "Saburi Ply",
+  "description": "Saburi Ply \u2014 Resource Hub and DSR Form",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#14171f",
-  "theme_color": "#14171f",
+  "background_color": "#b71c1c",
+  "theme_color": "#b71c1c",
   "icons": [
     {
       "src": "icons/icon-192.png",

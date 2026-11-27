@@ -1,7 +1,7 @@
 // Small service worker: caches the home screen so the app opens fast.
 // The Hub and DSR themselves always load live from Google.
-const CACHE = 'saburi-home-v5';
-const FILES = ['./', 'index.html', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/favicon-64.png', 'assets/saburi-logo-white.webp', 'assets/saburi-logo-anim.webp'];
+const CACHE = 'saburi-home-v7';
+const FILES = ['./', 'index.html', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/favicon-64.png', 'assets/saburi-logo-white.webp', 'assets/saburi-mark-white.webp', 'assets/saburi-wordmark-white.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
