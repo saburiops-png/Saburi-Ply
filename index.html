@@ -7,8 +7,10 @@
   <meta name="application-name" content="Saburi Ply">
   <meta name="apple-mobile-web-app-title" content="Saburi Ply">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#b71c1c" id="themeColor">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d0f15">
+  <meta name="color-scheme" content="light dark">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
@@ -293,31 +295,34 @@
     @keyframes aFade  { from { opacity: 0; } }
     @keyframes aGrow  { from { opacity: 1; transform: scaleY(0); } }
 
-    /* ---------- INTRO: red screen that matches the phone's own start screen ---------- */
+    /* ---------- INTRO: logo + SABURI PLYWOOD appear together as one piece ---------- */
     .intro-screen {
       position: fixed; inset: 0; z-index: 60;
       display: flex; align-items: center; justify-content: center;
       background:
-        radial-gradient(70% 55% at 40% 32%, #d92a2a 0%, rgba(217,42,42,0) 70%),
-        linear-gradient(180deg, #b71c1c 0%, #7e1010 100%);
-      transform: translate3d(0,0,0);
-      will-change: transform;
+        radial-gradient(60% 45% at 30% 22%, rgba(229,57,53,.30), rgba(229,57,53,0) 70%),
+        radial-gradient(60% 45% at 80% 88%, rgba(63,81,181,.26), rgba(63,81,181,0) 70%),
+        var(--bg);
+      opacity: 1;
+      will-change: opacity, transform;
       cursor: pointer;
     }
-    /* soft shadow under the curtain edge as it lifts */
-    .intro-screen::after {
-      content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 60px;
-      background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0));
+    .intro-screen.out {
+      opacity: 0; transform: scale(1.04); visibility: hidden;
+      transition: opacity .6s var(--ease), transform .6s var(--ease), visibility 0s linear .6s;
     }
-    .intro-screen.lift { transform: translate3d(0,-108%,0); transition: transform .8s var(--curtain); }
     .intro-stack {
-      --gap: 22px; --mark: 170px; --word: 300px;
-      --off: calc((var(--word) * 0.402 + var(--gap)) / 2);   /* keeps the logo dead-centre before the words appear */
-      display: flex; flex-direction: column; align-items: center; gap: var(--gap);
+      --mark: 140px; --word: 280px;
+      display: flex; flex-direction: column; align-items: center; gap: 22px;
+      opacity: 0; transform: translate3d(0,12px,0) scale(.97);
+      will-change: opacity, transform;
     }
-    .intro-mark { position: relative; width: var(--mark); will-change: transform; animation: markIn 1.15s var(--ease) both; }
+    .intro-screen.play .intro-stack { animation: stackIn .75s var(--ease) forwards; }
+    @keyframes stackIn { to { opacity: 1; transform: translate3d(0,0,0) scale(1); } }
+    .intro-mark { position: relative; width: var(--mark); }
     .intro-mark img { width: 100%; height: auto; }
-    /* light sweep across the logo, clipped to the logo's own shape */
+    .intro-word { width: var(--word); height: auto; }
+    /* one soft light sweep across the logo, after it has appeared */
     .intro-mark .sweep {
       position: absolute; inset: 0; overflow: hidden;
       -webkit-mask: url(assets/saburi-mark-white.webp) center / 100% 100% no-repeat;
@@ -325,19 +330,12 @@
     }
     .intro-mark .sweep::before {
       content: ""; position: absolute; top: -10%; bottom: -10%; left: 0; width: 45%;
-      background: linear-gradient(100deg, rgba(255,255,255,0), rgba(255,255,255,.95), rgba(255,255,255,0));
+      background: linear-gradient(100deg, rgba(255,255,255,0), rgba(255,255,255,.9), rgba(255,255,255,0));
       transform: translate3d(-140%,0,0) skewX(-14deg);
-      animation: sweep 1s var(--ease) .25s forwards;
       will-change: transform;
     }
-    .intro-word { width: var(--word); height: auto; opacity: 0; will-change: transform, opacity; animation: wordIn .75s var(--ease) .55s forwards; }
-    @keyframes markIn {
-      0%   { transform: translate3d(0,var(--off),0) scale(.74); }
-      45%  { transform: translate3d(0,var(--off),0) scale(1); }
-      100% { transform: translate3d(0,0,0) scale(1); }
-    }
-    @keyframes sweep  { to { transform: translate3d(320%,0,0) skewX(-14deg); } }
-    @keyframes wordIn { from { opacity: 0; transform: translate3d(0,26px,0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+    .intro-screen.play .intro-mark .sweep::before { animation: sweep 1s var(--ease) .45s forwards; }
+    @keyframes sweep { to { transform: translate3d(320%,0,0) skewX(-14deg); } }
 
     /* ---------- APP SCREEN (Hub / DSR slide up inside the page) ---------- */
     .layer {
@@ -424,7 +422,7 @@
       .tile-arrow svg { width: 28px; height: 28px; }
       .deco { right: 5%; top: 6%; width: 36%; max-width: 220px; }
       .help { align-self: center; font-size: 14px; }
-      .intro-stack { --mark: 210px; --word: 400px; --gap: 26px; }
+      .intro-stack { --mark: 180px; --word: 380px; gap: 26px; }
     }
 
     /* "reduce motion" setting: keep the opening, stop only the never-ending movement */
@@ -448,10 +446,9 @@
   <script>
     (function () {
       var root = document.documentElement;
-      var theme = document.getElementById('themeColor');
-      var ready = false, introDone = false;
+      var introDone = false;
 
-      // Wait for fonts + images, so the first animated frame is already perfect (no jump).
+      // wait for fonts + logos, so the first animated frame is already perfect (no jump)
       var assetsReady = Promise.race([
         Promise.all([
           document.fonts ? document.fonts.ready : Promise.resolve(),
@@ -459,15 +456,12 @@
         ]),
         new Promise(function (r) { setTimeout(r, 600); })
       ]);
-
       window.__startHome = function () {
         assetsReady.then(function () {
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              root.classList.add('go');
-              setTimeout(function () { root.classList.add('settled'); }, 2600);
-            });
-          });
+          requestAnimationFrame(function () { requestAnimationFrame(function () {
+            root.classList.add('go');
+            setTimeout(function () { root.classList.add('settled'); }, 2600);
+          }); });
         });
       };
 
@@ -476,26 +470,29 @@
       var deepLink = /^#(hub|dsr)$/.test(location.hash);
       var c = navigator.connection;
       var slow = c && (c.saveData || /2g/.test(c.effectiveType || ''));
-
-      if (seen || deepLink || slow) { theme.content = '#14171f'; window.__startHome(); return; }
+      if (seen || deepLink || slow) { window.__startHome(); return; }
 
       var intro = document.getElementById('intro');
       intro.style.display = 'flex';
 
-      function lift() {
+      function finish() {
         if (introDone) return;
         introDone = true;
-        intro.classList.add('lift');
-        theme.content = '#14171f';
-        window.__startHome();                       // home builds in as the curtain rises
-        setTimeout(function () { intro.remove(); }, 900);
+        intro.classList.add('out');               // fades away...
+        window.__startHome();                     // ...while the home screen builds in underneath
+        setTimeout(function () { intro.remove(); }, 700);
       }
-      // start the timing only once the logo is decoded (no blank first frame)
-      var logo = intro.querySelector('.intro-mark img');
-      var begin = function () { setTimeout(lift, 1500); };
-      if (logo.decode) logo.decode().then(begin, begin); else begin();
-      intro.addEventListener('click', lift);        // tap to skip
-      setTimeout(lift, 3500);                        // never wait longer
+      // play only when both logos are ready, so they appear together in one smooth move
+      var imgs = [].slice.call(intro.querySelectorAll('img'));
+      Promise.all(imgs.map(function (im) { return im.decode ? im.decode().catch(function(){}) : Promise.resolve(); }))
+        .then(function () {
+          requestAnimationFrame(function () {
+            intro.classList.add('play');
+            setTimeout(finish, 1650);              // 0.75s in + ~0.9s hold
+          });
+        });
+      intro.addEventListener('click', finish);    // tap to skip
+      setTimeout(finish, 3500);                   // never wait longer
     })();
   </script>
 
