@@ -2,13 +2,14 @@
 // - The home screen opens fast and still opens with no internet.
 // - A new upload to GitHub reaches phones on their next open.
 // - The Hub and DSR themselves always load live from Google (never cached here).
-const CACHE = 'saburi-home-v11';
+const CACHE = 'saburi-home-v12';
 const FONT_CACHE = 'saburi-fonts-v1';
 const FILES = [
   './', 'index.html', 'manifest.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/favicon-64.png',
-  'assets/saburi-logo-white.webp', 'assets/saburi-mark-white.webp', 'assets/saburi-wordmark-white.webp',
-  'assets/saburi-mark-shadow.webp', 'assets/saburi-wordmark-shadow.webp'
+  'assets/saburi-logo-white.webp', 'assets/saburi-wordmark-white.webp', 'assets/saburi-wordmark-shadow.webp',
+  'assets/saburi-mark-3d.webp', 'assets/saburi-mark-solo.webp',
+  'assets/saburi-mark-draw.webp', 'assets/saburi-mark-draw-shadow.webp'
 ];
 const PAGE_TIMEOUT = 3000;   // on a weak signal, show the saved copy after 3 seconds
 
