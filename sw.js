@@ -2,7 +2,7 @@
 // - The home screen opens fast and still opens with no internet.
 // - A new upload to GitHub reaches phones on their next open.
 // - The Hub and DSR themselves always load live from Google (never cached here).
-const CACHE = 'saburi-home-v9';
+const CACHE = 'saburi-home-v11';
 const FONT_CACHE = 'saburi-fonts-v1';
 const FILES = [
   './', 'index.html', 'manifest.json',

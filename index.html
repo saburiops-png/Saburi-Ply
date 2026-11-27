@@ -184,10 +184,17 @@
     }
     .shine { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 0; }
     .shine::before {
-      content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 60%;
-      background: linear-gradient(105deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.16) 50%, rgba(255,255,255,0) 100%);
-      transform: translate3d(-130%,0,0) skewX(-12deg);
-      transition: transform .9s var(--ease);
+      content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 30%;
+      background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.035) 30%, rgba(255,255,255,.11) 50%, rgba(255,255,255,.035) 70%, rgba(255,255,255,0) 100%);
+      transform: translate3d(-150%,0,0) skewX(-14deg);
+      opacity: 0;
+    }
+    /* a quick glint that crosses once and fades out at the end */
+    @keyframes glint {
+      0%   { transform: translate3d(-150%,0,0) skewX(-14deg); opacity: 0; }
+      15%  { opacity: 1; }
+      75%  { opacity: 1; }
+      100% { transform: translate3d(470%,0,0) skewX(-14deg); opacity: 0; }
     }
     .tile > *:not(.shine):not(.deco) { position: relative; z-index: 1; }
 
@@ -276,7 +283,7 @@
     @media (hover: hover) and (pointer: fine) {
       .tile:hover { transform: translate3d(0,-8px,0) scale(1.015); }
       .tile:hover::after { opacity: 1; }
-      .tile:hover .shine::before { transform: translate3d(260%,0,0) skewX(-12deg); }
+      .tile.glint .shine::before { animation: glint .75s cubic-bezier(.3,.5,.3,1) 1 both; }
       .tile:hover .tile-icon { transform: scale(1.12) rotate(-6deg); }
       .tile:hover .tile-arrow { transform: translate3d(5px,0,0) scale(1.12); }
       .tile:hover .chip { transform: translate3d(0,-3px,0); }
@@ -606,8 +613,10 @@
       var root = document.documentElement;
       var introDone = false;
 
+      // Simple mode is only for touch phones and tablets. A computer always gets every effect.
+      var touch = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
       // clearly low-power phones: simple mode straight away
-      if ((navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 2) root.classList.add('lite');
+      if (touch && ((navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 2)) root.classList.add('lite');
 
       // wait for fonts + logos, so the first animated frame is already perfect (no jump)
       var assetsReady = Promise.race([
@@ -652,14 +661,14 @@
         if (gaps.length < 6) return false;
         var sorted = gaps.slice().sort(function (x, y) { return x - y; });
         var usual = sorted[Math.floor(sorted.length / 2)];              // the screen's normal frame time
-        var late = gaps.filter(function (g) { return g > usual * 1.6 + 1; }).length;
-        return usual > 21 || Math.max.apply(null, gaps) > 120 || late / gaps.length > 0.18;
+        var late = gaps.filter(function (g) { return g > 28; }).length;   // slower than about 36 frames a second
+        return usual > 21 || Math.max.apply(null, gaps) > 120 || late / gaps.length > 0.15;
       }
       // Draw the home screen behind the shutter now, so the lift itself has nothing heavy to do.
       function prepare() {
         if (introDone) return;
         root.classList.add('prep');
-        if (root.classList.contains('lite')) return;
+        if (!touch || root.classList.contains('lite')) return;
         sampleFrames(450, function (gaps) {
           if (!introDone && struggling(gaps)) root.classList.add('lite');   // this phone gets the simple entrance
         });
@@ -999,6 +1008,13 @@
         openApp(key, true);
       });
     });
+    // light glint on the tiles: once per hover, always finishes, never runs backwards
+    if (window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      document.querySelectorAll('.tile').forEach(function (t) {
+        t.addEventListener('mouseenter', function () { t.classList.add('glint'); });
+        t.addEventListener('animationend', function (e) { if (e.animationName === 'glint') t.classList.remove('glint'); });
+      });
+    }
     homeBtn.addEventListener('click', goHome);
     document.getElementById('reloadBtn').addEventListener('click', reloadCurrent);
     document.getElementById('retryBtn').addEventListener('click', reloadCurrent);
